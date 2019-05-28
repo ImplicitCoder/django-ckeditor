@@ -18,6 +18,8 @@ from ckeditor_uploader.utils import storage
 
 from .utils import is_valid_image_extension
 
+from django_tenants import utils as tenantutils
+
 
 def _get_user_path(user):
     user_path = ''
@@ -41,6 +43,8 @@ def _get_user_path(user):
 def get_upload_filename(upload_name, user):
     user_path = _get_user_path(user)
 
+    tenant_path = tenantutils.parse_tenant_config_path('%s')
+
     # Generate date based path to put uploaded file.
     # If CKEDITOR_RESTRICT_BY_DATE is True upload file to date specific path.
     if getattr(settings, 'CKEDITOR_RESTRICT_BY_DATE', True):
@@ -50,7 +54,7 @@ def get_upload_filename(upload_name, user):
 
     # Complete upload path (upload_path + date_path).
     upload_path = os.path.join(
-        settings.CKEDITOR_UPLOAD_PATH, user_path, date_path
+        settings.CKEDITOR_UPLOAD_PATH, tenant_path, user_path, date_path
     )
 
     if (getattr(settings, 'CKEDITOR_UPLOAD_SLUGIFY_FILENAME', True) and
@@ -117,6 +121,9 @@ def get_image_files(user=None, path=''):
     Recursively walks all dirs under upload dir and generates a list of
     full paths for each file found.
     """
+
+    tenant_path = tenantutils.parse_tenant_config_path('%s')
+
     # If a user is provided and CKEDITOR_RESTRICT_BY_USER is True,
     # limit images to user specific path, but not for superusers.
     STORAGE_DIRECTORIES = 0
@@ -129,7 +136,7 @@ def get_image_files(user=None, path=''):
     else:
         user_path = ''
 
-    browse_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, user_path, path)
+    browse_path = os.path.join(settings.CKEDITOR_UPLOAD_PATH, tenant_path, user_path, path)
 
     try:
         storage_list = storage.listdir(browse_path)
